@@ -1,0 +1,11 @@
+/* :root {
+  --toastify-font-family: "Luckiest Guy", cursive !important;
+} */
+
+body {
+  width: 100%;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  font-family: "futura-pt", Futura, sans-serif;
+}
