@@ -7,7 +7,6 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 // Font Awesome
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-// Íconos que vas a usar
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 const routes = [
