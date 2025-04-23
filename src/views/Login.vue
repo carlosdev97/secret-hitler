@@ -12,14 +12,6 @@
     />
 
     <div class="w-100" style="max-width: 400px">
-      <!-- Campo: Nombre de usuario -->
-      <div class="mb-4">
-        <label class="form-label font-monospace fw-bold"
-          >Nombre de usuario</label
-        >
-        <input type="text" class="form-control border border-dark rounded-0" />
-      </div>
-
       <!-- Campo: Correo electrónico -->
       <div class="mb-4">
         <label class="form-label font-monospace fw-bold"
@@ -40,7 +32,7 @@
       <!-- Botón Registrarse -->
       <div class="text-center">
         <button class="btn btn-dark btn-font px-5 py-3 rounded-4 fw-bold">
-          Registrarse
+          Ingresar
         </button>
       </div>
     </div>
@@ -50,7 +42,7 @@
 <script>
 import { useRouter } from "vue-router";
 export default {
-  name: "Register",
+  name: "Login",
   setup() {
     const router = useRouter();
     return {

@@ -13,6 +13,7 @@ import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 const routes = [
   { path: "/", component: () => import("./views/Home.vue") },
   { path: "/register", component: () => import("./views/Register.vue") },
+  { path: "/login", component: () => import("./views/Login.vue") },
 ];
 
 const router = createRouter({
