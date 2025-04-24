@@ -17,21 +17,29 @@
         <label class="form-label font-monospace fw-bold"
           >Correo electronico</label
         >
-        <input type="email" class="form-control border border-dark rounded-0" />
+        <input 
+          type="email" 
+          class="form-control border border-dark rounded-0" 
+          v-model="email" 
+        />
       </div>
 
       <!-- Campo: Contraseña -->
       <div class="mb-4">
         <label class="form-label font-monospace fw-bold">Contraseña</label>
-        <input
-          type="password"
-          class="form-control border border-dark rounded-0"
+        <input 
+          type="password" 
+          class="form-control border border-dark rounded-0" 
+          v-model="password" 
         />
       </div>
 
       <!-- Botón Registrarse -->
       <div class="text-center">
-        <button class="btn btn-dark btn-font px-5 py-3 rounded-4 fw-bold">
+        <button 
+          class="btn btn-dark btn-font px-5 py-3 rounded-4 fw-bold" 
+          @click="handleLogin"
+        >
           Ingresar
         </button>
       </div>
@@ -40,15 +48,18 @@
 </template>
 
 <script>
-import { useRouter } from "vue-router";
+import { useLogin } from '../firebase/Login.js';
+
 export default {
-  name: "Login",
   setup() {
-    const router = useRouter();
-    return {
-      router,
+    const { email, password, handleLogin } = useLogin();
+
+    return { 
+      email, 
+      password, 
+      handleLogin 
     };
-  },
+  }
 };
 </script>
 
