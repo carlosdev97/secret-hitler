@@ -1,157 +1,146 @@
-import { getFirestore, doc, updateDoc, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { db, auth } from "./config"; // Usa las instancias inicializadas desde config.js
+import { db } from "./config";
+import { doc, updateDoc, collection, query, where, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import Swal from "sweetalert2";
-
-// Función para rotar presidente
+import { ref, onUnmounted } from 'vue';
+import { getFirestore, onSnapshot } from 'firebase/firestore';
+/**
+ * Asigna el siguiente presidente basado en el orden de turno
+ * @param {string} partidaId - ID de la partida
+ * @returns {Promise<{success: boolean, nuevoPresidente?: string, ordenTurno?: number, error?: string}>}
+ */
 export async function rotarPresidente(partidaId) {
-  try {
-    // 1. Obtener jugadores vivos ordenados por turno
-    const jugadoresRef = collection(db, `partidas/${partidaId}/jugadores`);
-    const q = query(jugadoresRef, where("estaVivo", "==", true));
-    const querySnapshot = await getDocs(q);
-    
-    if (querySnapshot.empty) throw new Error("No hay jugadores vivos");
+    console.log("[DEBUG] Iniciando rotación de presidente...");
+    try {
+        
+        // 1. Obtener todos los jugadores vivos ordenados por turno
+        const jugadoresRef = collection(db, `partidas/${partidaId}/jugadores`);
+        const q = query(jugadoresRef, where("esta_vivo", "==", true));
+        const querySnapshot = await getDocs(q);
 
-    const jugadores = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })).sort((a, b) => a.ordenTurno - b.ordenTurno);
+        console.log(`[DEBUG] Jugadores vivos encontrados: ${querySnapshot.size}`);
+        
+        if (querySnapshot.empty) {
+            throw new Error("No hay jugadores vivos en la partida");
+        }
 
-    // 2. Obtener partida actual
-    const partidaRef = doc(db, "partidas", partidaId);
-    const partidaSnap = await getDoc(partidaRef);
-    if (!partidaSnap.exists()) throw new Error("Partida no existe");
+        const jugadores = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })).sort((a, b) => a.ordenTurno - b.ordenTurno);
 
-    const presidenteActualId = partidaSnap.data().turnoActual?.presidenteId;
+        // 2. Obtener partida actual
+        const partidaRef = doc(db, "partidas", partidaId);
+        const partidaSnap = await getDoc(partidaRef);
+        if (!partidaSnap.exists()) throw new Error("Partida no existe");
 
-    // 3. Determinar siguiente presidente
-    let siguientePresidente;
-    if (!presidenteActualId) {
-      siguientePresidente = jugadores.find(j => j.ordenTurno === 1);
-    } else {
-      const currentIndex = jugadores.findIndex(j => j.id === presidenteActualId);
-      const nextIndex = (currentIndex + 1) % jugadores.length;
-      siguientePresidente = jugadores[nextIndex];
+        const presidenteActualId = partidaSnap.data().turno_jugador_id;
+
+        // 3. Determinar siguiente presidente
+        let siguientePresidente;
+        if (!presidenteActualId) {
+            siguientePresidente = jugadores.find(j => j.ordenTurno === 1);
+        } else {
+            const currentIndex = jugadores.findIndex(j => j.id === presidenteActualId);
+            const nextIndex = (currentIndex + 1) % jugadores.length;
+            siguientePresidente = jugadores[nextIndex];
+        }
+
+        // 4. Actualizar con batch
+        const batch = writeBatch(db);
+
+        // Resetear todos los presidentes
+        jugadores.forEach(jugador => {
+            const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, jugador.id);
+            batch.update(jugadorRef, { es_presidente: false });
+        });
+
+        // Asignar nuevo presidente
+        const nuevoPresidenteRef = doc(db, `partidas/${partidaId}/jugadores`, siguientePresidente.id);
+        batch.update(nuevoPresidenteRef, { 
+            es_presidente: true,
+            es_canciller: false
+        });
+
+        // Actualizar estado de partida
+        batch.update(partidaRef, {
+            turno_jugador_id: siguientePresidente.id,
+            "turnoActual.presidenteId": siguientePresidente.id,
+            "turnoActual.cancillerId": null,
+            "turnoActual.fase": "nominacion"
+        });
+
+        await batch.commit();
+
+        console.log(`[DEBUG] Nuevo presidente asignado: ${siguientePresidente.nombre} (Turno ${siguientePresidente.ordenTurno})`);
+
+        return {
+            success: true,
+            nuevoPresidente: siguientePresidente.nombre,
+            ordenTurno: siguientePresidente.ordenTurno
+        };
+
+    } catch (error) {
+        console.error("Error al rotar presidente:", error);
+        return { success: false, error: error.message };
     }
-
-    // 4. Actualizar con batch
-    const batch = writeBatch(db);
-
-    // Resetear todos los presidentes
-    jugadores.forEach(jugador => {
-      const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, jugador.id);
-      batch.update(jugadorRef, { esPresidente: false });
-    });
-
-    // Asignar nuevo presidente
-    const nuevoPresidenteRef = doc(db, `partidas/${partidaId}/jugadores`, siguientePresidente.id);
-    batch.update(nuevoPresidenteRef, { esPresidente: true });
-
-    // Actualizar estado de partida
-    batch.update(partidaRef, {
-      "turnoActual.presidenteId": siguientePresidente.id,
-      "turnoActual.cancillerId": null,
-      "turnoActual.fase": "nominacion"
-    });
-
-    await batch.commit();
-
-    return {
-      success: true,
-      nuevoPresidente: siguientePresidente.nombre,
-      ordenTurno: siguientePresidente.ordenTurno
-    };
-
-  } catch (error) {
-    console.error("Error al rotar presidente:", error);
-    return { success: false, error: error.message };
-  }
 }
 
-// Función para distribuir roles
-export async function distribuirRoles(partidaId) {
-  try {
-    const jugadoresRef = collection(db, `partidas/${partidaId}/jugadores`);
-    const jugadoresSnap = await getDocs(jugadoresRef);
-    const jugadores = jugadoresSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    const numJugadores = jugadores.length;
-    const roles = [];
-    
-    // 1 Hitler
-    roles.push({ rol: "Hitler", inclinacion: "Fascista" });
-    
-    // Resto de fascistas
-    const numFascistas = Math.floor((numJugadores - 1) / 2);
-    for (let i = 1; i < numFascistas; i++) {
-      roles.push({ rol: "Fascista", inclinacion: "Fascista" });
+/**
+ * Termina el turno actual y asigna el siguiente presidente
+ * @param {string} partidaId - ID de la partida
+ */
+export async function terminarTurno(partidaId) {
+    const { success, error } = await rotarPresidente(partidaId);
+    if (!success) {
+        throw new Error(error || "Error al terminar turno");
     }
-    
-    // Liberales
-    const numLiberales = numJugadores - numFascistas;
-    for (let i = 0; i < numLiberales; i++) {
-      roles.push({ rol: "Liberal", inclinacion: "Liberal" });
-    }
-    
-    // Mezclar roles
-    const rolesMezclados = roles.sort(() => Math.random() - 0.5);
-
-    // Asignar roles a jugadores
-    const batch = writeBatch(db);
-    jugadores.forEach((jugador, index) => {
-      const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, jugador.id);
-      batch.update(jugadorRef, {
-        rol: rolesMezclados[index].rol,
-        inclinacion: rolesMezclados[index].inclinacion
-      });
-    });
-
-    await batch.commit();
-    return { success: true };
-
-  } catch (error) {
-    console.error("Error al distribuir roles:", error);
-    return { success: false, error: error.message };
-  }
 }
 
-// Función para iniciar partida
-export async function iniciarPartida(partidaId) {
-  try {
-    // 1. Distribuir roles
-    const distribucion = await distribuirRoles(partidaId);
-    if (!distribucion.success) throw new Error(distribucion.error);
+export async function postularCanciller(partidaId, presidenteId, candidatoId) {
+    try {
+        // Obtener datos de la partida
+        const partidaRef = doc(db, "partidas", partidaId);
+        const partidaSnap = await getDoc(partidaRef);
+        if (!partidaSnap.exists()) throw new Error("La partida no existe.");
 
-    // 2. Asignar primer presidente aleatorio
-    const jugadoresRef = collection(db, `partidas/${partidaId}/jugadores`);
-    const jugadoresSnap = await getDocs(jugadoresRef);
-    const jugadores = jugadoresSnap.docs.map(doc => doc.id);
-    
-    const primerPresidenteId = jugadores[Math.floor(Math.random() * jugadores.length)];
-    
-    const batch = writeBatch(db);
-    
-    // Actualizar partida
-    const partidaRef = doc(db, "partidas", partidaId);
-    batch.update(partidaRef, {
-      estado: "en_progreso",
-      "turnoActual.presidenteId": primerPresidenteId,
-      "turnoActual.fase": "nominacion"
-    });
-    
-    // Actualizar jugador
-    const presidenteRef = doc(db, `partidas/${partidaId}/jugadores`, primerPresidenteId);
-    batch.update(presidenteRef, { esPresidente: true });
-    
-    await batch.commit();
-    return { success: true };
+        const turnoActual = partidaSnap.data().turnoActual || {};
 
-  } catch (error) {
-    console.error("Error al iniciar partida:", error);
-    return { success: false, error: error.message };
-  }
+        // Verificar que quien postula es el presidente actual
+        if (turnoActual.presidenteId !== presidenteId) {
+            throw new Error("Solo el presidente actual puede postular al canciller.");
+        }
+
+        // Obtener lista de jugadores vivos
+        const jugadoresRef = collection(db, `partidas/${partidaId}/jugadores`);
+        const vivosQuery = query(jugadoresRef, where("esta_vivo", "==", true));
+        const vivosSnap = await getDocs(vivosQuery);
+
+        const jugadoresVivos = vivosSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // Validar que el candidato es válido
+        const esValido = jugadoresVivos.some(j => j.id === candidatoId && j.id !== presidenteId);
+        if (!esValido) {
+            throw new Error("El jugador seleccionado no es válido para ser canciller.");
+        }
+
+        // Actualizar candidato a canciller
+        const partidaUpdate = {
+            "turnoActual.cancillerId": candidatoId,
+            "turnoActual.fase": "votacion"
+        };
+        await updateDoc(partidaRef, partidaUpdate);
+
+        // Marcar en el jugador
+        const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, candidatoId);
+        await updateDoc(jugadorRef, { es_canciller: true });
+
+        console.log(`[DEBUG] Postulado como canciller: ${candidatoId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error al postular canciller:", error);
+        return { success: false, error: error.message };
+    }
 }
