@@ -25,7 +25,7 @@ export function useLogin() {
                 icon: 'success',
                 confirmButtonText: 'Continuar'
             }).then(() => {
-                router.push("/create-Game");
+                router.push("/game");
             });
         } catch (error) {
             handleAuthError(error);
