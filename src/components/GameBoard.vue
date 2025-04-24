@@ -55,7 +55,7 @@
 
       <div class="col-2">
         <div class="card p-3 bg-dark text-white">
-          [{{ board.ultima_politica || '-' }}] Última Política
+          [{{ board.ultima_politica || "-" }}] Última Política
         </div>
       </div>
 
@@ -71,35 +71,45 @@
         </div>
       </div>
     </div>
+    <SimpleModal v-model:show="showModal" :players="players" />
   </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
-import { rotarPresidente } from '@/firebase/GameBoard.js'
+import { defineProps, ref, onMounted } from "vue";
+import { rotarPresidente } from "@/firebase/GameBoard.js";
+import SimpleModal from "../components/ModalWindow.vue";
 
 const props = defineProps({
   game: {
     type: Object,
-    required: true
-  }
-})
+    required: true,
+  },
+});
 
-// Inicializamos board con defaults para evitar undefined
+// Estado inicial del modal y jugadores
+const showModal = ref(false);
+const players = ref([]);
+
+onMounted(() => {
+  // Simulamos obtener los jugadores al montar el componente
+  players.value = props.game.players || [];
+  showModal.value = true;
+});
+
 const board = {
-  leyes_fascistas:      props.game.board?.leyes_fascistas      ?? 0,
-  leyes_liberales:      props.game.board?.leyes_liberales      ?? 0,
-  mazo:                 props.game.board?.mazo                 ?? [],
-  ultima_politica:      props.game.board?.ultima_politica      ?? null,
-  descartes:            props.game.board?.descartes            ?? []
-}
+  leyes_fascistas: props.game.board?.leyes_fascistas ?? 0,
+  leyes_liberales: props.game.board?.leyes_liberales ?? 0,
+  mazo: props.game.board?.mazo ?? [],
+  ultima_politica: props.game.board?.ultima_politica ?? null,
+  descartes: props.game.board?.descartes ?? [],
+};
 
-// Llama a la función que rota presidente
 async function endTurn() {
   try {
-    await rotarPresidente(props.game.codigo)
+    await rotarPresidente(props.game.codigo);
   } catch (error) {
-    console.error("Error al terminar turno:", error)
+    console.error("Error al terminar turno:", error);
   }
 }
 </script>

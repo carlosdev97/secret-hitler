@@ -4,6 +4,26 @@
     <div class="card card-create">
       <div class="card-body card-body-create">
         <div class="container-box">
+
+          <!-- Unirse a partida existente -->
+          <div class="mb-4 w-100">
+            <h4>Unirse a una partida</h4>
+            <div class="input-group justify-content-center">
+              <input
+                v-model="joinCode"
+                type="text"
+                class="form-control"
+                placeholder="Código de partida"
+              />
+              <button
+                class="btn btn-outline-primary"
+                @click="handleJoin"
+              >
+                Unirse
+              </button>
+            </div>
+          </div>
+
           <!-- Lista de participantes -->
           <div class="container-info conta me-3" style="width: 500px; padding: 8px;">
             <h4>Lista de participantes</h4>
@@ -59,9 +79,9 @@
               Estado:
               <span class="badge"
                     :class="{
-                      'bg-primary':   game.estado === 'No iniciada',
-                      'bg-success':   game.estado === 'iniciada',
-                      'bg-danger':    game.estado === 'finalizada'
+                      'bg-primary': game.estado === 'No iniciada',
+                      'bg-success': game.estado === 'iniciada',
+                      'bg-danger':  game.estado === 'finalizada'
                     }"
               >
                 {{ game.estado }}
@@ -95,6 +115,7 @@
               </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -114,14 +135,15 @@ if (!usuarioActual) {
   router.push({ name: 'Login' })
 }
 
-// Estado local
+// Local state
 const mostrarRoles = ref(false)
+const joinCode     = ref('')
 
-// Crear partida y obtener métodos / estado
-const { game, inicializarJuego, iniciarPartida, escucharJugadores } =
+// CreateGame composable
+const { game, inicializarJuego, iniciarPartida, escucharJugadores, joinGame } =
   createGame(({ name, params }) => router.push({ name, params }))
 
-// Al montar, inicializa y suscribe a jugadores
+// On mount, initialize and subscribe
 onMounted(async () => {
   await inicializarJuego()
   escucharJugadores(game.codigo, jugadores => {
@@ -129,12 +151,22 @@ onMounted(async () => {
   })
 })
 
-// Navegar a la sala de juego
-const irAPartida = () => {
-  router.push({ name: 'GameRoom', params: { id: game.codigo } })
+// Handle join
+async function handleJoin() {
+  if (!joinCode.value) return
+  const ok = await joinGame(joinCode.value)
+  if (ok) {
+    // Clear input on success
+    joinCode.value = ''
+  }
 }
 
-// Clases para roles
+// Navigate to nomination
+const irAPartida = () => {
+  router.push({ name: 'Nomination', params: { id: game.codigo } })
+}
+
+// Role badge classes
 const rolClass = rol => ({
   'bg-danger':  rol === 'Hitler',
   'bg-warning': rol === 'Fascista',
