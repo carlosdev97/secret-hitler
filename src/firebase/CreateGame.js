@@ -42,6 +42,23 @@ export function createGame(redirectCallback) {
         return roles.sort(() => Math.random() - 0.5);
     };
 
+    const generarMazoCartas = () => {
+        const mazo = [];
+
+        // 6 cartas liberales
+        for (let i = 0; i < 6; i++) {
+            mazo.push("liberal");
+        }
+
+        // 11 cartas fascistas
+        for (let i = 0; i < 11; i++) {
+            mazo.push("fascista");
+        }
+
+        // Mezclar el mazo
+        return mazo.sort(() => Math.random() - 0.5);
+    };
+
     async function inicializarJuego() {
         const user = auth.currentUser;
         if (!user) return;
@@ -193,10 +210,14 @@ export function createGame(redirectCallback) {
                 // Asignar primer presidente (aleatorio)
                 const primerPresidente = jugadores[Math.floor(Math.random() * jugadores.length)];
                 const partidaRef = doc(db, "partidas", game.codigo);
+                const mazo = generarMazoCartas();
+
                 await updateDoc(partidaRef, { 
                     estado: "iniciada",
-                    turno_jugador_id: primerPresidente.id
+                    turno_jugador_id: primerPresidente.id,
+                    mazo: mazo
                 });
+
 
                 // Actualizar estado del presidente en la base de datos
                 const presidenteRef = doc(db, `partidas/${game.codigo}/jugadores`, primerPresidente.id);
