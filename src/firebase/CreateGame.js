@@ -83,6 +83,7 @@ export function createGame(redirectCallback) {
                 fallos_consecutivos: 0,
                 ganador: null,
                 turno_jugador_id: null,
+                id_canciller_postulado: null,
                 configuracion: game.configuracion
             });
 

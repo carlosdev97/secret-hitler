@@ -128,8 +128,8 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
 
         // Actualizar candidato a canciller
         const partidaUpdate = {
-            "turnoActual.cancillerId": candidatoId,
-            "turnoActual.fase": "votacion"
+            "turnoActual.id_canciller_postulado": candidatoId
+
         };
         await updateDoc(partidaRef, partidaUpdate);
 
