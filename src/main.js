@@ -8,8 +8,9 @@ import "bootstrap";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faUser } from "@fortawesome/free-regular-svg-icons";
 
-library.add(faArrowLeft);
+library.add(faArrowLeft, faUser);
 
 const app = createApp(App);
 
