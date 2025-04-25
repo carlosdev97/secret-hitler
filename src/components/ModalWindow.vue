@@ -23,6 +23,7 @@
 
 <script>
 import PlayerCard from "../components/PlayerCard.vue";
+import { postularCanciller } from "../firebase/GameBoard.js";
 
 export default {
   name: "SimpleModal",
@@ -70,10 +71,26 @@ export default {
     selectCard(index) {
       this.selectedIndex = index;
     },
-    close() {
-      this.$emit("update:show", false);
+    async close() {
       const selectedPlayer = this.filteredPlayers[this.selectedIndex];
-      this.$emit("player-selected", selectedPlayer);
+      if (selectedPlayer) {
+        try {
+          const result = await postularCanciller(
+            this.partidaId,
+            this.currentPlayer.uid,
+            selectedPlayer.uid
+          );
+          if (!result.success) {
+            console.error("Error al postular canciller:", result.error);
+            return;
+          }
+          this.$emit("player-selected", selectedPlayer);
+        } catch (error) {
+          console.error("Error al postular canciller:", error);
+          return;
+        }
+      }
+      this.$emit("update:show", false);
     },
   },
 };

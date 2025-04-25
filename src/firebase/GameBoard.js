@@ -103,10 +103,13 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
         const partidaSnap = await getDoc(partidaRef);
         if (!partidaSnap.exists()) throw new Error("La partida no existe.");
 
-        const turnoActual = partidaSnap.data().turnoActual || {};
+        // Obtener datos del presidente
+        const presidenteRef = doc(db, `partidas/${partidaId}/jugadores`, presidenteId);
+        const presidenteSnap = await getDoc(presidenteRef);
+        if (!presidenteSnap.exists()) throw new Error("El presidente no existe.");
 
         // Verificar que quien postula es el presidente actual
-        if (turnoActual.presidenteId !== presidenteId) {
+        if (!presidenteSnap.data().es_presidente) {
             throw new Error("Solo el presidente actual puede postular al canciller.");
         }
 
@@ -129,13 +132,8 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
         // Actualizar candidato a canciller
         const partidaUpdate = {
             "turnoActual.id_canciller_postulado": candidatoId
-
         };
         await updateDoc(partidaRef, partidaUpdate);
-
-        // Marcar en el jugador
-       // const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, candidatoId);
-       // await updateDoc(jugadorRef, { es_canciller: true });
 
         console.log(`[DEBUG] Postulado como canciller: ${candidatoId}`);
         return { success: true };
