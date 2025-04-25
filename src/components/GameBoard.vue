@@ -71,14 +71,23 @@
         </div>
       </div>
     </div>
-    <SimpleModal v-model:show="showModal" :players="players" />
+    <SimpleModal 
+      v-model:show="showModal" 
+      :players="game.players" 
+      :current-player="currentPlayer"
+      :partida-id="game.info?.codigo || ''"
+      :is-president="isCurrentPlayerPresident"
+      @player-selected="handlePlayerSelected" 
+    />
   </div>
 </template>
 
 <script setup>
-import { defineProps, ref, onMounted } from "vue";
+import { defineProps, ref, onMounted, computed, watch } from "vue";
 import { rotarPresidente } from "@/firebase/GameBoard.js";
 import SimpleModal from "../components/ModalWindow.vue";
+import { AuthService } from "@/firebase/auth.js";
+import { usePresidente } from "@/composables/usePresidente";
 
 const props = defineProps({
   game: {
@@ -87,14 +96,43 @@ const props = defineProps({
   },
 });
 
-// Estado inicial del modal y jugadores
+// Estado inicial del modal
 const showModal = ref(false);
-const players = ref([]);
+
+// Obtener el jugador actual
+const currentPlayer = computed(() => {
+  const currentUser = AuthService.getCurrentUser();
+  const player = props.game.players.find(player => player.uid === currentUser?.uid) || {};
+  console.log("Current Player:", player);
+  return player;
+});
+
+const { presidenteId } = usePresidente(props.game.info?.codigo);
+
+// Computed para verificar si el jugador actual es presidente
+const isCurrentPlayerPresident = computed(() => {
+  const isPresident = currentPlayer.value?.es_presidente === true;
+  console.log("Is Current Player President:", isPresident);
+  console.log("Current Player es_presidente:", currentPlayer.value?.es_presidente);
+  return isPresident;
+});
+
+// Watch para mostrar el modal cuando el jugador se convierte en presidente
+watch(isCurrentPlayerPresident, (newValue) => {
+  console.log("President status changed:", newValue);
+  if (newValue) {
+    showModal.value = true;
+  }
+});
 
 onMounted(() => {
-  // Simulamos obtener los jugadores al montar el componente
-  players.value = props.game.players || [];
-  showModal.value = true;
+  console.log("Game mounted");
+  console.log("Game state:", props.game);
+  console.log("Initial showModal value:", showModal.value);
+  // Mostrar el modal si el jugador ya es presidente al montar el componente
+  if (currentPlayer.value?.es_presidente) {
+    showModal.value = true;
+  }
 });
 
 const board = {
@@ -107,10 +145,14 @@ const board = {
 
 async function endTurn() {
   try {
-    await rotarPresidente(props.game.codigo);
+    await rotarPresidente(props.game.info?.codigo);
   } catch (error) {
     console.error("Error al terminar turno:", error);
   }
+}
+
+function handlePlayerSelected(player) {
+  console.log("Jugador seleccionado en GameBoard:", player);
 }
 </script>
 

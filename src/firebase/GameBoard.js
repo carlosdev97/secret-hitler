@@ -134,8 +134,8 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
         await updateDoc(partidaRef, partidaUpdate);
 
         // Marcar en el jugador
-        const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, candidatoId);
-        await updateDoc(jugadorRef, { es_canciller: true });
+       // const jugadorRef = doc(db, `partidas/${partidaId}/jugadores`, candidatoId);
+       // await updateDoc(jugadorRef, { es_canciller: true });
 
         console.log(`[DEBUG] Postulado como canciller: ${candidatoId}`);
         return { success: true };

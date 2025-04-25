@@ -1,6 +1,6 @@
 <!-- src/views/GameRoom.vue -->
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, computed } from 'vue'
 import { useGame } from '@/composables/useGame'
 import GameBoard from '@/components/GameBoard.vue'
 import Jugadores from '@/components/Jugadores.vue'
@@ -13,8 +13,13 @@ const props = defineProps({
   }
 })
 
+// Limpiamos el ID de la partida (eliminamos el ":" si existe)
+const gameId = computed(() => {
+  return props.id.startsWith(':') ? props.id.substring(1) : props.id
+})
+
 // Obtenemos el estado reactivo de la partida
-const game = useGame(props.id)
+const game = useGame(gameId.value)
 </script>
 
 <template>

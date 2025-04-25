@@ -1,12 +1,12 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="close">
+  <div v-if="show && isPresident" class="modal-overlay" @click.self="close">
     <div class="modal-box d-flex flex-column align-items-center gap-5">
       <h3>Selecciona el candidato</h3>
       <div class="player-list d-flex gap-3">
         <PlayerCard
-          v-for="(player, index) in players"
+          v-for="(player, index) in filteredPlayers"
           :key="index"
-          :username="player.username"
+          :username="player.nombre"
           :class="{ selected: selectedIndex === index }"
           @click="selectCard(index)"
         />
@@ -31,15 +31,40 @@ export default {
   },
   props: {
     show: Boolean,
+    isPresident: {
+      type: Boolean,
+      required: true
+    },
     players: {
       type: Array,
       default: () => [],
     },
+    partidaId: {
+      type: String,
+      required: true
+    },
+    currentPlayer: {
+      type: Object,
+      required: true
+    }
   },
   data() {
     return {
       selectedIndex: null,
     };
+  },
+  computed: {
+    filteredPlayers() {
+      return this.players.filter(player => !player.es_presidente);
+    }
+  },
+  watch: {
+    show(newValue) {
+      console.log("Modal show changed:", newValue);
+    },
+    isPresident(newValue) {
+      console.log("Modal isPresident changed:", newValue);
+    }
   },
   methods: {
     selectCard(index) {
@@ -47,7 +72,8 @@ export default {
     },
     close() {
       this.$emit("update:show", false);
-      console.log("Jugador seleccionado", this.players[this.selectedIndex]);
+      const selectedPlayer = this.filteredPlayers[this.selectedIndex];
+      this.$emit("player-selected", selectedPlayer);
     },
   },
 };

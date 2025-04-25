@@ -1,38 +1,63 @@
 <!-- src/components/Jugadores.vue -->
 <template>
-  <div 
-    class="player-card d-flex align-items-center px-3 py-2 rounded position-relative"
-    :class="{ 'opacity-50': !isAlive }"
-  >
-    <font-awesome-icon 
-      :icon="['far','user']" 
-      class="fs-4 me-2" 
-      style="color: #434343" 
-    />
-    <span class="fw-semibold me-2">{{ name }}</span>
-    <span v-if="isPresident" class="badge bg-warning text-dark me-1">P</span>
-    <span v-if="isChancellor" class="badge bg-info text-dark">C</span>
+  <div class="player-card" :class="{ 'player-dead': !isAlive }">
+    <div class="player-name">
+      {{ name }}
+      <span v-if="isPresident" class="badge bg-primary">Presidente</span>
+      <span v-if="isChancellor" class="badge bg-success">Canciller</span>
+    </div>
+    <div v-if="!isAlive" class="player-status">Muerto</div>
   </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
-
-const props = defineProps({
-  name: { type: String,  required: true },
-  isAlive: { type: Boolean, default: true },
-  isPresident: { type: Boolean, default: false },
-  isChancellor:{ type: Boolean, default: false }
+defineProps({
+  name: {
+    type: String,
+    default: 'Jugador'
+  },
+  isAlive: {
+    type: Boolean,
+    default: true
+  },
+  isPresident: {
+    type: Boolean,
+    default: false
+  },
+  isChancellor: {
+    type: Boolean,
+    default: false
+  }
 })
 </script>
 
 <style scoped>
 .player-card {
-  background-color: transparent;
-  color: #000;
-  font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 5px;
 }
-.opacity-50 {
-  opacity: .5;
+
+.player-dead {
+  opacity: 0.5;
+  background-color: #f8f9fa;
+}
+
+.player-name {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge {
+  margin-left: 5px;
+  font-size: 0.8em;
+}
+
+.player-status {
+  color: #dc3545;
+  font-size: 0.9em;
 }
 </style>

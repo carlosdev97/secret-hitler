@@ -86,6 +86,7 @@ export function createGame(redirectCallback) {
         uidCreador: user.uid,
         usuarioCreador: userNombre,
         fallos_consecutivos: 0,
+        
         ganador: null,
         turno_jugador_id: null,
         configuracion: game.configuracion,

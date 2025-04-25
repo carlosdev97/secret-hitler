@@ -5,24 +5,6 @@
       <div class="card-body card-body-create">
         <div class="container-box">
 
-          <!-- Unirse a partida existente -->
-          <div class="mb-4 w-100">
-            <h4>Unirse a una partida</h4>
-            <div class="input-group justify-content-center">
-              <input
-                v-model="joinCode"
-                type="text"
-                class="form-control"
-                placeholder="Código de partida"
-              />
-              <button
-                class="btn btn-outline-primary"
-                @click="handleJoin"
-              >
-                Unirse
-              </button>
-            </div>
-          </div>
 
           <!-- Lista de participantes -->
           <div class="container-info conta me-3" style="width: 500px; padding: 8px;">
@@ -99,9 +81,6 @@
                 :disabled="game.participantes.length < game.configuracion.minJugadores"
               >
                 Iniciar partida
-              </button>
-              <button class="btn btn-outline-danger mt-2" @click="router.push({ name: 'Home' })">
-                Volver
               </button>
             </div>
 
