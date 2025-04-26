@@ -110,13 +110,11 @@ import { createGame }  from '@/firebase/CreateGame.js'
 // Redirigir si no está logueado
 const router = useRouter()
 const usuarioActual = AuthService.getCurrentUser()
-if (!usuarioActual) {
-  router.push({ name: 'Login' })
-}
+
 
 // Local state
 const mostrarRoles = ref(false)
-const joinCode     = ref('')
+
 
 // CreateGame composable
 const { game, inicializarJuego, iniciarPartida, escucharJugadores, joinGame } =
@@ -131,14 +129,7 @@ onMounted(async () => {
 })
 
 // Handle join
-async function handleJoin() {
-  if (!joinCode.value) return
-  const ok = await joinGame(joinCode.value)
-  if (ok) {
-    // Clear input on success
-    joinCode.value = ''
-  }
-}
+
 
 // Navigate to nomination
 const irAPartida = () => {

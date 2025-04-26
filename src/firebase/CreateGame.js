@@ -23,7 +23,7 @@ const game = {
   estado: "No iniciada",
   configuracion: {
     maxJugadores: 10,
-    minJugadores: 1,
+    minJugadores: 5,
   },
 };
 
@@ -216,42 +216,7 @@ export function createGame(redirectCallback) {
       callback(snap.docs.map((d) => d.data()))
     );
   }
-  async function joinGame(codigo) {
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error("No autenticado");
   
-      // Verificar partida existe
-      const partidaRef = doc(db, "partidas", codigo);
-      const partidaSnap = await getDoc(partidaRef);
-      if (!partidaSnap.exists()) {
-        Swal.fire("Error", "El código de partida no existe", "error");
-        return false;
-      }
-  
-      // Añadir jugador
-      const jugadorRef = doc(db, `partidas/${codigo}/jugadores`, user.uid);
-      await setDoc(jugadorRef, {
-        uid: user.uid,
-        nombre: user.displayName || "Jugador",
-        esta_vivo: true,
-        es_presidente: false,
-        es_canciller: false,
-        rol: null,
-        inclinacion: null
-      });
-  
-      // Actualizar estado local y listeners
-      game.codigo = codigo;
-      localStorage.setItem("codigoPartida", codigo);
-      escucharCambios(codigo, redirectCallback);
-  
-      return true;
-    } catch (e) {
-      console.error("joinGame error:", e);
-      return false;
-    }
-  }
   // Reconexión al cargar
   onReconnect();
 
@@ -260,7 +225,6 @@ export function createGame(redirectCallback) {
     inicializarJuego,
     iniciarPartida,
     escucharJugadores,
-    joinGame,
   };
 }
 

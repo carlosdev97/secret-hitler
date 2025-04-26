@@ -71,6 +71,8 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de nominación -->
     <SimpleModal 
       v-model:show="showModal" 
       :players="game.players" 
@@ -79,6 +81,16 @@
       :is-president="isCurrentPlayerPresident"
       @player-selected="handlePlayerSelected" 
     />
+
+    <!-- Modal de votación -->
+    <VotingModal
+      v-model:show="showVotingModal"
+      :candidato-id="candidatoId"
+      :partida-id="game.info?.codigo || ''"
+      :jugador-id="currentPlayer?.uid || ''"
+      :jugadores="game.players"
+      @voto-registrado="handleVotoRegistrado"
+    />
   </div>
 </template>
 
@@ -86,6 +98,7 @@
 import { defineProps, ref, onMounted, computed, watch } from "vue";
 import { rotarPresidente } from "@/firebase/GameBoard.js";
 import SimpleModal from "../components/ModalWindow.vue";
+import VotingModal from "../components/VotingModal.vue";
 import { AuthService } from "@/firebase/auth.js";
 import { usePresidente } from "@/composables/usePresidente";
 
@@ -98,6 +111,8 @@ const props = defineProps({
 
 // Estado inicial del modal
 const showModal = ref(false);
+const showVotingModal = ref(false);
+const candidatoId = ref('');
 
 // Obtener el jugador actual
 const currentPlayer = computed(() => {
@@ -122,6 +137,20 @@ watch(isCurrentPlayerPresident, (newValue) => {
   console.log("President status changed:", newValue);
   if (newValue) {
     showModal.value = true;
+  }
+});
+
+// Watch para mostrar el modal de votación cuando hay un candidato y estamos en fase de votación
+watch(() => ({
+  candidato: props.game.turnoActual?.id_canciller_postulado,
+  fase: props.game.turnoActual?.fase
+}), ({ candidato, fase }) => {
+  console.log("Estado de votación:", { candidato, fase });
+  if (candidato && fase === 'votacion') {
+    candidatoId.value = candidato;
+    showVotingModal.value = true;
+  } else {
+    showVotingModal.value = false;
   }
 });
 
@@ -153,6 +182,10 @@ async function endTurn() {
 
 function handlePlayerSelected(player) {
   console.log("Jugador seleccionado en GameBoard:", player);
+}
+
+function handleVotoRegistrado() {
+  showVotingModal.value = false;
 }
 </script>
 

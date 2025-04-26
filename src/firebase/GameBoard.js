@@ -129,10 +129,18 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
             throw new Error("El jugador seleccionado no es válido para ser canciller.");
         }
 
-        // Actualizar candidato a canciller
+        // Actualizar turnoActual con la nueva estructura
         const partidaUpdate = {
-            "turnoActual.id_canciller_postulado": candidatoId
+            turnoActual: {
+                presidenteId: presidenteId,
+                id_canciller_postulado: candidatoId,
+                fase: "votacion",
+                votacion: {
+                    votos: {}
+                }
+            }
         };
+
         await updateDoc(partidaRef, partidaUpdate);
 
         console.log(`[DEBUG] Postulado como canciller: ${candidatoId}`);
@@ -142,3 +150,52 @@ export async function postularCanciller(partidaId, presidenteId, candidatoId) {
         return { success: false, error: error.message };
     }
 }
+
+
+// Función para registrar un voto
+export async function registrarVoto(partidaId, jugadorId, voto) {
+    try {
+      const partidaRef = doc(db, "partidas", partidaId);
+      
+      // Actualizar el voto usando dot notation para el Map
+      await updateDoc(partidaRef, {
+        [`turnoActual.votacion.votos.${jugadorId}`]: voto
+      });
+  
+      return { success: true };
+    } catch (error) {
+      console.error("Error al registrar voto:", error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  // Función para contar votos
+  export function contarVotos(votos) {
+    const totalVotos = Object.keys(votos).length;
+    const votosJa = Object.values(votos).filter(v => v === "Ja").length;
+    const votosNein = totalVotos - votosJa;
+    
+    return {
+      total: totalVotos,
+      ja: votosJa,
+      nein: votosNein,
+      aprobado: votosJa > totalVotos / 2
+    };
+  }
+  
+  
+  // Función para verificar si todos han votado
+  export async function verificarVotacionCompleta(partidaId) {
+    const partidaRef = doc(db, "partidas", partidaId);
+    const partidaSnap = await getDoc(partidaRef);
+    const data = partidaSnap.data();
+    
+    const votos = data.turnoActual.votacion.votos;
+    const jugadoresVivos = data.players.filter(p => p.esta_vivo).length;
+    
+    return Object.keys(votos).length === jugadoresVivos;
+  }
+
+
+
+
