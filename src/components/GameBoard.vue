@@ -98,7 +98,6 @@
 import { defineProps, ref, onMounted, computed, watch } from "vue";
 import { rotarPresidente } from "@/firebase/GameBoard.js";
 import SimpleModal from "../components/ModalWindow.vue";
-import VotingModal from "../components/VotingModal.vue";
 import { AuthService } from "@/firebase/auth.js";
 import { usePresidente } from "@/composables/usePresidente";
 
