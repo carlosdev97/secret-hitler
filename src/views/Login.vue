@@ -67,7 +67,7 @@ async function handleLogin() {
   })
 
   if (success) {
-    router.push({ name: 'CreateGame' })
+    router.push({ name: 'VotacionTest' })
   } else {
     Swal.fire('Error', error, 'error')
   }

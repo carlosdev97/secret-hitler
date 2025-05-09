@@ -71,6 +71,13 @@
         </div>
       </div>
     </div>
+    <PolicyModal
+      :show="showPolicyModal"
+      :is-president="isCurrentPlayerPresidentPolicy"
+      :partida-id="1377"
+      @update:show="showPolicyModal = $event"
+      @card-selected="handleCardSelected"
+    />
 
     <!-- Modal de nominación -->
     <SimpleModal 
@@ -85,7 +92,8 @@
     <!-- Modal de votación -->
     <VotingModal
       v-model:show="showVotingModal"
-      :candidato-id="candidatoId"
+      :candidato-id="candidato.id"
+      :candidato-nombre="candidato.nombre"
       :partida-id="game.info?.codigo || ''"
       :jugador-id="currentPlayer?.uid || ''"
       :jugadores="game.players"
@@ -98,6 +106,8 @@
 import { defineProps, ref, onMounted, computed, watch } from "vue";
 import { rotarPresidente } from "@/firebase/GameBoard.js";
 import SimpleModal from "../components/ModalWindow.vue";
+import VotingModal from "../components/VotingModal.vue";
+import PolicyModal from "../components/PolicyModal.vue";
 import { AuthService } from "@/firebase/auth.js";
 import { usePresidente } from "@/composables/usePresidente";
 
@@ -108,9 +118,17 @@ const props = defineProps({
   },
 });
 
+
+
+const candidato = ref({
+  id: '',
+  nombre: ''
+});
+
 // Estado inicial del modal
 const showModal = ref(false);
 const showVotingModal = ref(false);
+const showPolicyModal = ref(false);
 const candidatoId = ref('');
 
 // Obtener el jugador actual
@@ -126,32 +144,66 @@ const { presidenteId } = usePresidente(props.game.info?.codigo);
 // Computed para verificar si el jugador actual es presidente
 const isCurrentPlayerPresident = computed(() => {
   const isPresident = currentPlayer.value?.es_presidente === true;
-  console.log("Is Current Player President:", isPresident);
-  console.log("Current Player es_presidente:", currentPlayer.value?.es_presidente);
-  return isPresident;
+  const fase = props.game.info?.turnoActual?.fase 
+  return isPresident & fase === 'nominacion';
 });
 
 // Watch para mostrar el modal cuando el jugador se convierte en presidente
 watch(isCurrentPlayerPresident, (newValue) => {
-  console.log("President status changed:", newValue);
   if (newValue) {
     showModal.value = true;
   }
 });
 
+const isCurrentPlayerPresidentPolicy = computed(() => {
+  const isPresident = currentPlayer.value?.es_presidente === true;
+  const fase = props.game.info?.turnoActual?.fase 
+  return isPresident & fase === 'legislacion';
+});
+
+
+
+
+// Watch para mostrar el modal de políticas cuando sea el turno del presidente
+watch(isCurrentPlayerPresidentPolicy, (newValue) => {
+  console.log("President status changed:", newValue);
+  if (newValue) {
+    showPolicyModal.value = true;
+  }
+});
+
+
+
+
+
+
 // Watch para mostrar el modal de votación cuando hay un candidato y estamos en fase de votación
 watch(() => ({
-  candidato: props.game.turnoActual?.id_canciller_postulado,
-  fase: props.game.turnoActual?.fase
-}), ({ candidato, fase }) => {
-  console.log("Estado de votación:", { candidato, fase });
-  if (candidato && fase === 'votacion') {
-    candidatoId.value = candidato;
-    showVotingModal.value = true;
+  candidato: props.game.info?.turnoActual?.id_canciller_postulado,
+  fase: props.game.info?.turnoActual?.fase,
+ 
+}), ({ candidato: candidatoId, fase }) => {
+  
+  if (fase === 'votacion' && candidatoId) {
+    
+
+    // Buscar el jugador completo
+    const jugadorPostulado = props.game.players.find(players => players.uid === candidatoId) || {};
+    console.log("Jugador postulado:", jugadorPostulado);  
+    if (jugadorPostulado) {
+      candidato.value = {
+        id: candidatoId,
+        nombre: jugadorPostulado.nombre
+      };
+      console.log("Mostrando modal de votación para:", candidato.value);
+      showVotingModal.value = true;
+    }
   } else {
+    console.log("No se muestra el modal de votación, fase:", fase);
     showVotingModal.value = false;
   }
 });
+
 
 onMounted(() => {
   console.log("Game mounted");
@@ -186,6 +238,11 @@ function handlePlayerSelected(player) {
 function handleVotoRegistrado() {
   showVotingModal.value = false;
 }
+
+function handleCardSelected() {
+  showPolicyModal.value = false;
+}
+
 </script>
 
 <style scoped>
